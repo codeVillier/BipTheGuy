@@ -7,16 +7,19 @@
 
 import SwiftUI
 import AVFAudio
+import PhotosUI
 
 struct ContentView: View {
     @State private var audioPlayer: AVAudioPlayer!
     @State private var isFullSize = true
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var bipImage = Image("clown")
     
     var body: some View {
         VStack {
             Spacer()
             
-            Image("clown")
+            bipImage
                 .resizable()
                 .scaledToFit()
                 .scaleEffect(isFullSize ? 1.0 : 0.9)
@@ -31,12 +34,19 @@ struct ContentView: View {
             
             Spacer()
             
-            Button {
-                // TODO: Button action here
-            } label: {
+            PhotosPicker(selection: $selectedPhoto) {
                 Label("Photo Library", systemImage: "photo.fill.on.rectangle.fill")
             }
-
+            .onChange(of: selectedPhoto) {
+                Task {
+                    guard let selectedImage = try? await selectedPhoto?.loadTransferable(type: Image.self) else {
+                        print("😡ERROR: Could not get Image from laodTransferable")
+                        return
+                    }
+                    bipImage = selectedImage
+                }
+            }
+            
 
         }
         .padding()
