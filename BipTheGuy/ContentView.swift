@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var isFullSize = true
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var bipImage = Image("clown")
+    @AppStorage("savedImageData") private var savedImageData: Data?
     
     var body: some View {
         VStack {
@@ -36,7 +37,10 @@ struct ContentView: View {
             
             PhotosPicker(selection: $selectedPhoto) {
                 Label("Photo Library", systemImage: "photo.fill.on.rectangle.fill")
+                    .font(.title2)
             }
+            .buttonStyle(.glassProminent)
+            .tint(.green.opacity(0.7))
             .onChange(of: selectedPhoto) {
                 Task {
                     guard let selectedImage = try? await selectedPhoto?.loadTransferable(type: Image.self) else {
@@ -44,12 +48,34 @@ struct ContentView: View {
                         return
                     }
                     bipImage = selectedImage
+                    
+                    // Save the image data
+                    if let data = try? await selectedPhoto?.loadTransferable(type: Data.self) {
+                        savedImageData = data
+                    }
                 }
             }
-            
-
         }
         .padding()
+        .onAppear {
+            loadSavedImage()
+        }
+    }
+    
+    func loadSavedImage() {
+        guard let imageData = savedImageData else {
+            return
+        }
+        
+        #if os(iOS)
+        if let uiImage = UIImage(data: imageData) {
+            bipImage = Image(uiImage: uiImage)
+        }
+        #elseif os(macOS)
+        if let nsImage = NSImage(data: imageData) {
+            bipImage = Image(nsImage: nsImage)
+        }
+        #endif
     }
     
     func playSound(soundName: String) {
